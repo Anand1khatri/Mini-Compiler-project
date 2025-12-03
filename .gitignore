@@ -1,0 +1,21 @@
+Python cache files
+
+pycache/
+*.pyc
+
+Virtual environments
+
+venv/
+.venv/
+env/
+
+IDE settings (VS Code, PyCharm, etc.)
+
+.vscode/
+.idea/
+*.swp
+
+OS generated files
+
+.DS_Store
+Thumbs.db

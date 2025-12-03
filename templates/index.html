@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Compiler GUI</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1e1e1e; color: #d4d4d4; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 250px; background: #252526; border-right: 1px solid #333; padding: 20px; }
+        .main { flex: 1; display: flex; flex-direction: column; }
+        h2 { font-size: 16px; margin-bottom: 10px; color: #fff; text-transform: uppercase; }
+        
+        .editor-container { flex: 1; display: flex; }
+        textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 20px; resize: none; font-family: 'Consolas', monospace; font-size: 16px; outline: none; }
+        
+        .output-panel { width: 40%; background: #252526; border-left: 1px solid #333; display: flex; flex-direction: column; }
+        .tabs { display: flex; background: #333; }
+        .tab { padding: 10px 15px; cursor: pointer; color: #aaa; background: #333; border: none; outline: none; }
+        .tab.active { background: #1e1e1e; color: #fff; border-top: 2px solid #007acc; }
+        
+        .tab-content { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Consolas', monospace; white-space: pre-wrap; display: none; }
+        .tab-content.active { display: block; }
+        
+        .btn { background: #007acc; color: white; padding: 10px 20px; border: none; cursor: pointer; width: 100%; margin-bottom: 20px; font-weight: bold; }
+        .btn:hover { background: #0062a3; }
+        
+        .log-success { color: #4ec9b0; }
+        .log-error { color: #f44747; }
+        .log-tac { color: #ce9178; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Compiler Control</h2>
+        <p style="font-size: 12px; color: #888; margin-bottom: 20px;">
+            Powered by Python Flask Backend.
+        </p>
+        <button class="btn" onclick="compileCode()">▶ RUN COMPILER</button>
+        
+        <div style="font-size: 13px;">
+            <p><strong>Supported Features:</strong></p>
+            <ul style="padding-left: 20px; color: #aaa;">
+                <li>Variables (let a = 10;)</li>
+                <li>Math (+, -, *, /)</li>
+                <li>Control (if, while)</li>
+                <li>Printing (print a;)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="editor-container">
+            <textarea id="source" spellcheck="false">let a = 0;
+let max = 5;
+
+print 111; /* Start */
+
+while (a < max) {
+    a = a + 1;
+    print a;
+}
+
+if (a > 4) {
+    print 999; /* Success */
+}</textarea>
+        </div>
+    </div>
+
+    <div class="output-panel">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('output')">Console</button>
+            <button class="tab" onclick="showTab('tac')">TAC Code</button>
+            <button class="tab" onclick="showTab('tokens')">Tokens</button>
+            <button class="tab" onclick="showTab('ast')">AST</button>
+        </div>
+        <div id="output" class="tab-content active log-success">Ready...</div>
+        <div id="tac" class="tab-content log-tac"></div>
+        <div id="tokens" class="tab-content"></div>
+        <div id="ast" class="tab-content"></div>
+    </div>
+
+    <script>
+        function showTab(id) {
+            document.querySelectorAll('.tab-content').forEach(d => d.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function compileCode() {
+            const source = document.getElementById('source').value;
+            const outputDiv = document.getElementById('output');
+            
+            outputDiv.innerHTML = "Compiling...";
+            outputDiv.classList.remove('log-error');
+
+            try {
+                const res = await fetch('/compile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source })
+                });
+                
+                const data = await res.json();
+
+                if (data.error) {
+                    outputDiv.textContent = "Runtime Error:\n" + data.error;
+                    outputDiv.classList.add('log-error');
+                    return;
+                }
+
+                outputDiv.textContent = data.output || "No output.";
+                document.getElementById('tac').textContent = data.tac.join('\n');
+                document.getElementById('tokens').textContent = JSON.stringify(data.tokens, null, 2);
+                document.getElementById('ast').textContent = JSON.stringify(data.ast, null, 2);
+
+            } catch (err) {
+                outputDiv.textContent = "Connection Error: Is the Python server running?";
+                outputDiv.classList.add('log-error');
+            }
+        }
+    </script>
+</body>
+</html>
